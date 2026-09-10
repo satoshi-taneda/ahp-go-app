@@ -1,0 +1,39 @@
+
+SERVERS:
+  - NAME: "server1"
+    MANAGEMENT_IP: "192.168.0.1"
+    BACKUP_IP: "192.168.1.1"
+    GYOMU_IP: "192.168.2.1"
+    DB_IP: "192.168.3.1"
+    DEVICE_1_PATH: "dev/sdm1"
+    PRIORITY: 1
+
+  - NAME: "server2"
+    MANAGEMENT_IP: "192.168.0.2"
+    BACKUP_IP: "192.168.1.2"
+    GYOMU_IP: "192.168.2.2"
+    DB_IP: "192.168.3.2"
+    DEVICE_1_PATH: "dev/sdm2"
+    PRIORITY: 2
+
+
+
+{% set ips = ['MANAGEMENT_IP', 'BACKUP_IP', 'GYOMU_IP', 'DB_IP', 'DEVICE_1_PATH'] %}
+{% set ip_count = ips | length %}
+{% set server_count = SERVERS | length %}
+
+{% for ip in ips %}
+{% set i = loop.index0 %}
+{% if ip is match('DEVICE_*') %}
+{% for SERVER in SERVERS | sort(attribute='PRIORITY') %}
+clpcfadm.py add hb diskhb {{ loop.index0 }} {{ i + 1 }}
+clpcfadm.py add device {{ SERVER.NAME }} disk {{ loop.index0 }} {{ SERVER[ip] | quote }}
+{% endfor %}
+{% else %}
+{% for SERVER in SERVERS | sort(attribute='PRIORITY') %}
+clpcfadm.py add hb lankhb {{ loop.index0 + server_count * i }} {{ i + 1 }}
+clpcfadm.py add device {{ SERVER.NAME }} lan {{ loop.index0 + server_count * i }} {{ SERVER[ip] }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
